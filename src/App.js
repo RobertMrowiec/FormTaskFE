@@ -4,25 +4,43 @@ import React, {Component} from 'react'
 import TextField from '@material-ui/core/TextField'
 import Toolbar from '@material-ui/core/Toolbar'
 import Typography from '@material-ui/core/Typography'
+import * as EmailValidator from 'email-validator';
 import './App.css'
 
 class App extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      firstName: '',
-      lastName: '',
+      date: '',
+      dataError: false,
       email: '',
-      date: ''
+      emailError: false,
+      firstName: '',
+      firstNameError: false,
+      lastName: '',
+      lastNameError: false
     }
     this.blankState = this.state
   }
 
-  handleChange = name => event => {
-    this.setState({
-      [name]: event.target.value
-    })
+  emailValidation = (email, errorName) => event => {
+    this.handleChange(email, event.target.value)
+    const tempErr = !EmailValidator.validate(event.target.value) ? true : false
+    this.handleChange(errorName, tempErr)
   }
+
+  validationString = (name, errorName) => event  => {
+    event.target.value = event.target.value.replace(/\s/g, '');
+    this.handleChange(name, event.target.value)
+    const tempErr = event.target.value.length < 3 ? true : false
+    this.handleChange(errorName, tempErr)
+  }
+
+  handleChange = (name, value) => {
+    this.setState({
+      [name]: value,
+    });
+  };
   
   reset = () => {
     return this.setState(this.blankState)
@@ -55,33 +73,40 @@ class App extends Component {
 
           <TextField
             className='Form'
+            error={this.state.firstNameError}
             id='firstName'
             label='First name'
             margin='normal'
-            onChange={this.handleChange('firstName')}
+            onChange={this.validationString('firstName', 'firstNameError')}
             required
+            type="string"
             value={this.state.firstName}
           />
           <br/>
 
           <TextField
             className='Form'
+            error={this.state.lastNameError}
             id='lastName'
             label='Last name'
             margin='normal'
-            onChange={this.handleChange('lastName')}
+            onChange={this.validationString('lastName', 'lastNameError')}
             required
+            type="string"
             value={this.state.lastName}
           />
           <br/>
 
           <TextField
+            autoComplete="false"
             className='Form'
+            error={this.state.emailError}
             id='email'
             label='Email'
             margin='normal'
-            onChange={this.handleChange('email')}
+            onChange={this.emailValidation('email', 'emailError')}
             required
+            type="string"
             value={this.state.email}
           />
           <br/>
@@ -94,7 +119,6 @@ class App extends Component {
             }}
             label='Date'
             margin='normal'
-            onChange={this.handleChange('date')}
             required
             type='date'
             value={this.state.date}
