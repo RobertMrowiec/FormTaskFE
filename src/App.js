@@ -56,6 +56,14 @@ class App extends Component {
   send = () => {
     const newObject = (({ firstName, lastName, email, date }) => ({ firstName, lastName, email, date }))(this.state);
 
+    for (let key in newObject) {
+      if (newObject[key] === "") {
+        const tmpKey = key + "Error"
+        console.log(tmpKey)
+        this.setState({[tmpKey]: true})
+      }
+    }
+
     fetch('http://localhost:8030/api/events', {
       headers: {
         'Accept': 'application/json',
@@ -72,6 +80,8 @@ class App extends Component {
       return ctx
     }).then(ctx => {
       if (ctx.saved) setTimeout(() => this.reset(), 2000)
+
+      setTimeout(() => this.setState({open: false}), 2000)
     }).catch(() => console.log)
   }
   
