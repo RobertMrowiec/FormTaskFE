@@ -1,6 +1,7 @@
 import AppBar from '@material-ui/core/AppBar'
 import Button from '@material-ui/core/Button'
 import React, {Component} from 'react'
+import Snackbar from '@material-ui/core/Snackbar'
 import TextField from '@material-ui/core/TextField'
 import Toolbar from '@material-ui/core/Toolbar'
 import Typography from '@material-ui/core/Typography'
@@ -11,53 +12,69 @@ class App extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      date: '',
+      date: new Date().toISOString().substr(0,10),
       dataError: false,
       email: '',
       emailError: false,
       firstName: '',
       firstNameError: false,
       lastName: '',
-      lastNameError: false
+      lastNameError: false,
+      open: false,
+      message: ''
     }
     this.blankState = this.state
   }
 
   emailValidation = (email, errorName) => event => {
-    this.handleChange(email, event.target.value)
-    const tempErr = !EmailValidator.validate(event.target.value) ? true : false
-    this.handleChange(errorName, tempErr)
+    const val = event.target.value
+    this.handleChange(email, val)
+    this.handleChange(errorName, !EmailValidator.validate(val))
   }
 
-  validationString = (name, errorName) => event  => {
-    event.target.value = event.target.value.replace(/\s/g, '');
-    this.handleChange(name, event.target.value)
-    const tempErr = event.target.value.length < 3 ? true : false
-    this.handleChange(errorName, tempErr)
+  stringValidation = (name, errorName) => event => {
+    const val = event.target.value.replace(/\s/g, '')
+    this.handleChange(name, val)
+    this.handleChange(errorName, val.length < 3)
   }
 
   handleChange = (name, value) => {
     this.setState({
-      [name]: value,
+      [name]: value
     });
   };
   
+  handleDateChange = () => event => {
+    this.setState({
+      'date': event.target.value
+    })
+  }
   reset = () => {
     return this.setState(this.blankState)
   }
 
   send = () => {
-    fetch('localhost:8030/api/events', {
+    const newObject = (({ firstName, lastName, email, date }) => ({ firstName, lastName, email, date }))(this.state);
+
+    fetch('http://localhost:8030/api/events', {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
       method: "POST",
-      body: JSON.stringify(this.state)
-    }).then(res => {
-      
+      body: JSON.stringify(newObject)
+    }).then(async res => {
+      const ctx = await res.json()
+      this.setState({
+        open: true,
+        message: await ctx.message
+      })
+      return ctx
+    }).then(ctx => {
+      if (ctx.saved) setTimeout(() => this.reset(), 2000)
     }).catch(() => console.log)
   }
+  
   render() {
     return (
       <div className='App'>
@@ -72,12 +89,11 @@ class App extends Component {
         <div>
 
           <TextField
-            className='Form'
             error={this.state.firstNameError}
             id='firstName'
             label='First name'
             margin='normal'
-            onChange={this.validationString('firstName', 'firstNameError')}
+            onChange={this.stringValidation('firstName', 'firstNameError')}
             required
             type="string"
             value={this.state.firstName}
@@ -85,12 +101,11 @@ class App extends Component {
           <br/>
 
           <TextField
-            className='Form'
             error={this.state.lastNameError}
             id='lastName'
             label='Last name'
             margin='normal'
-            onChange={this.validationString('lastName', 'lastNameError')}
+            onChange={this.stringValidation('lastName', 'lastNameError')}
             required
             type="string"
             value={this.state.lastName}
@@ -99,7 +114,6 @@ class App extends Component {
 
           <TextField
             autoComplete="false"
-            className='Form'
             error={this.state.emailError}
             id='email'
             label='Email'
@@ -112,13 +126,13 @@ class App extends Component {
           <br/>
 
           <TextField
-            className='Form'
             id='date'
             InputLabelProps={{
               shrink: true
             }}
             label='Date'
             margin='normal'
+            onChange={this.handleDateChange()}
             required
             type='date'
             value={this.state.date}
@@ -127,7 +141,7 @@ class App extends Component {
 
         <div>
           
-          <Button color='primary'>
+          <Button color='primary' onClick={this.send}>
             Send
           </Button>
 
@@ -136,6 +150,16 @@ class App extends Component {
           </Button>
 
         </div>
+
+        <Snackbar
+          open={this.state.open}
+          onClose={this.handleClose}
+          ContentProps={{
+            'aria-describedby': 'message-id',
+          }}
+          message={this.state.message}
+        />
+
       </div>
     )
   }
